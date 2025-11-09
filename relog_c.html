@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ángulo del Reloj - 10 Rondas</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 10px;
+    }
+    h2 {
+      font-size: 1.4em;
+      margin-top: 10px;
+    }
+    #reloj {
+      position: relative;
+      width: 90vw;
+      max-width: 300px;
+      height: 90vw;
+      max-height: 300px;
+      margin: 20px auto;
+      border: 6px solid #333;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .hora-num {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      text-align: center;
+      line-height: 24px;
+      font-weight: bold;
+      color: #333;
+      transform: translate(-50%, -50%);
+      font-size: 0.9em;
+    }
+    .manecilla {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: center bottom;
+      background: #333;
+    }
+    #hora {
+      width: 5px;
+      height: 50px;
+      margin-left: -2.5px;
+      margin-top: -50px;
+      z-index: 2;
+    }
+    #minuto {
+      width: 3px;
+      height: 80px;
+      margin-left: -1.5px;
+      margin-top: -80px;
+      z-index: 1;
+    }
+    .tarjeta {
+      display: inline-block;
+      padding: 12px 18px;
+      margin: 8px;
+      background: #ffcc00;
+      border-radius: 10px;
+      cursor: grab;
+      font-size: 1.1em;
+    }
+    #opciones {
+      margin: 10px auto;
+      max-width: 90%;
+    }
+    #dropzone {
+      margin: 15px auto;
+      padding: 15px;
+      border: 2px dashed #999;
+      border-radius: 10px;
+      background: #e0f7fa;
+      max-width: 90%;
+      font-size: 1em;
+    }
+    #resultado {
+      font-size: 1.2em;
+      margin: 15px 0;
+    }
+    #reiniciar {
+      margin-top: 15px;
+      padding: 12px 24px;
+      font-size: 1em;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+    }
+
+    @media (max-width: 400px) {
+      .tarjeta {
+        font-size: 1em;
+        padding: 10px 14px;
+      }
+      #dropzone {
+        font-size: 0.95em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h2>¿Qué ángulo forman las manecillas?</h2>
+<p id="ronda">Ronda 1 de 10</p>
+
+<div id="reloj">
+  <script>
+    for (let i = 1; i <= 12; i++) {
+      const angulo = (i * 30) * Math.PI / 180;
+      const x = 150 + 120 * Math.sin(angulo);
+      const y = 150 - 120 * Math.cos(angulo);
+      document.write(`<div class="hora-num" style="left:${x}px; top:${y}px;">${i}</div>`);
+    }
+  </script>
+
+  <div id="hora" class="manecilla"></div>
+  <div id="minuto" class="manecilla"></div>
+</div>
+
+<div id="opciones"></div>
+
+<div id="dropzone" ondrop="drop(event)" ondragover="allowDrop(event)">
+  Arrastra aquí la respuesta
+</div>
+
+<p id="resultado"></p>
+<button id="reiniciar" onclick="reiniciarJuego()">Volver a jugar</button>
+
+<script>
+  let anguloCorrecto = 0;
+  let rondaActual = 1;
+  let puntaje = 0;
+  const totalRondas = 10;
+
+  function generarReto() {
+    const hora = Math.floor(Math.random() * 12);
+    const minuto = Math.floor(Math.random() * 12) * 5;
+
+    const horaGrados = (hora % 12) * 30 + (minuto / 60) * 30;
+    const minutoGrados = minuto * 6;
+
+    anguloCorrecto = Math.abs(horaGrados - minutoGrados);
+    if (anguloCorrecto > 180) anguloCorrecto = 360 - anguloCorrecto;
+
+    document.getElementById("hora").style.transform = `rotate(${horaGrados}deg)`;
+    document.getElementById("minuto").style.transform = `rotate(${minutoGrados}deg)`;
+
+    document.getElementById("ronda").textContent = `Ronda ${rondaActual} de ${totalRondas}`;
+
+    const opciones = new Set();
+    opciones.add(Math.round(anguloCorrecto));
+    while (opciones.size < 4) {
+      const distractor = Math.round(Math.random() * 180);
+      if (distractor !== Math.round(anguloCorrecto)) {
+        opciones.add(distractor);
+      }
+    }
+
+    const opcionesArray = Array.from(opciones).sort(() => Math.random() - 0.5);
+    const contenedor = document.getElementById("opciones");
+    contenedor.innerHTML = "";
+    opcionesArray.forEach((valor, i) => {
+      const tarjeta = document.createElement("div");
+      tarjeta.className = "tarjeta";
+      tarjeta.textContent = `${valor}°`;
+      tarjeta.id = `opcion${i}`;
+      tarjeta.setAttribute("draggable", "true");
+      tarjeta.setAttribute("ondragstart", "drag(event)");
+      contenedor.appendChild(tarjeta);
+    });
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+
+  function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.textContent);
+  }
+
+  function drop(ev) {
+    ev.preventDefault();
+    const respuesta = ev.dataTransfer.getData("text");
+    const valor = parseInt(respuesta);
+
+    if (valor === Math.round(anguloCorrecto)) {
+      document.getElementById("resultado").textContent = "¡Correcto! ";
+      puntaje++;
+    } else {
+      document.getElementById("resultado").textContent = `Incorrecto  (era ${Math.round(anguloCorrecto)}°)`;
+    }
+
+    rondaActual++;
+
+    if (rondaActual <= totalRondas) {
+      setTimeout(() => {
+        document.getElementById("resultado").textContent = "";
+        generarReto();
+      }, 1500);
+    } else {
+      setTimeout(() => {
+        document.getElementById("resultado").textContent = `Juego terminado  Puntaje: ${puntaje} de ${totalRondas}`;
+        document.getElementById("opciones").style.display = "none";
+        document.getElementById("dropzone").style.display = "none";
+        document.getElementById("ronda").textContent = "";
+        document.getElementById("reiniciar").style.display = "inline-block";
+      }, 1500);
+    }
+  }
+
+  function reiniciarJuego() {
+    rondaActual = 1;
+    puntaje = 0;
+    document.getElementById("opciones").style.display = "block";
+    document.getElementById("dropzone").style.display = "block";
+    document.getElementById("resultado").textContent = "";
+    document.getElementById("reiniciar").style.display = "none";
+    generarReto();
+  }
+
+  generarReto();
+</script>
+
+</body>
+</html>

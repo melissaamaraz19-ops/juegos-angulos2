@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego de Ángulos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 10px;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 10px;
+      font-size: 1.5em;
+    }
+    .mazo {
+      margin: 10px auto;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .carta {
+      width: 80px;
+      height: 110px;
+      background-image: url('img/carta_f.jpg');
+      background-size: cover;
+      background-position: center;
+      border: 2px solid #333;
+      margin: 2px;
+      cursor: pointer;
+      transition: transform 0.5s ease;
+    }
+    .boton-barajar {
+      margin: 10px 0;
+    }
+    .revelada {
+      margin: 20px auto;
+      width: 220px;
+      height: 220px;
+      border: 2px dashed #666;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .panel-pregunta {
+      margin-top: 20px;
+    }
+    .opciones button {
+      margin: 6px;
+      padding: 12px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      width: 80%;
+      max-width: 250px;
+    }
+    .contador {
+      margin-top: 15px;
+      font-size: 1em;
+    }
+    .resultado {
+      font-size: 1.2em;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .mensaje-final {
+      font-size: 1.4em;
+      margin-top: 20px;
+      animation: aparecer 1s ease-in-out;
+    }
+    @keyframes aparecer {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .jugar-nuevo {
+      margin: 15px auto;
+      padding: 12px 24px;
+      font-size: 1em;
+      cursor: pointer;
+      display: block;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+<h1 id="titulo">Juego de Ángulos</h1>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="boton-barajar">
+  <button onclick="barajarCartas()">Barajar Cartas</button>
+</div>
+
+<div class="mazo" id="mazo"></div>
+<div class="revelada" id="revelada"></div>
+
+<div class="panel-pregunta">
+  <div id="pregunta"></div>
+  <div class="opciones" id="opciones"></div>
+</div>
+
+<div class="contador" id="contador"></div>
+<div class="resultado" id="resultado"></div>
+<div id="mensajeFinal"></div>
+
+<script>
+  const todasLasCartas = [
+    { id: 1, imagen: "img/45.png", tipo: "Agudo" },
+    { id: 2, imagen: "img/obtuso_120.png", tipo: "Obtuso" },
+    { id: 3, imagen: "img/65.png", tipo: "Agudo" },
+    { id: 4, imagen: "img/angulo_llano.png", tipo: "Llano" },
+    { id: 5, imagen: "img/10.png", tipo: "Agudo" },
+    { id: 6, imagen: "img/135.png", tipo: "Obtuso" },
+    { id: 7, imagen: "img/angulo_recto.jpg", tipo: "Recto" },
+    { id: 8, imagen: "img/30.png", tipo: "Agudo" },
+    { id: 9, imagen: "img/145.png", tipo: "Obtuso" },
+    { id: 10, imagen: "img/110.png", tipo: "Obtuso" }
+  ];
+
+  const cartasNivel2 = [
+    { id: 11, imagen: "img/escalera.png", tipo: "Recto" },
+    { id: 12, imagen: "img/avanico.png", tipo: "Llano" },
+    { id: 13, imagen: "img/helado.png", tipo: "Agudo" },
+    { id: 14, imagen: "img/crayon.png", tipo: "Agudo" },
+    { id: 15, imagen: "img/zapato.png", tipo: "Agudo" },
+    { id: 16, imagen: "img/agudo.png", tipo: "Obtuso" },
+    { id: 17, imagen: "img/pastel.png", tipo: "Llano" },
+    { id: 18, imagen: "img/arcoiris.png", tipo: "Llano" },
+    { id: 19, imagen: "img/com.png", tipo: "Obtuso" },
+    { id: 20, imagen: "img/libro.png", tipo: "Obtuso" }
+  ];
+
+let cartasSeleccionadas = [];
+  let preguntaActual = 0;
+  let aciertos = 0;
+  let errores = 0;
+
+  function barajarCartas() {
+    document.getElementById("titulo").innerText = "Juego de Ángulos – Nivel 1";
+    iniciarJuego([...todasLasCartas]);
+  }
+
+  function iniciarNivel2() {
+    document.getElementById("titulo").innerText = "Juego de Ángulos – Nivel 2";
+    iniciarJuego([...cartasNivel2]);
+  }
+
+  function iniciarJuego(cartas) {
+    const barajadas = cartas.sort(() => Math.random() - 0.5);
+    cartasSeleccionadas = barajadas.slice(0, 10);
+    preguntaActual = 0;
+    aciertos = 0;
+    errores = 0;
+
+    document.getElementById("mazo").innerHTML = "";
+    document.getElementById("revelada").innerHTML = "";
+    document.getElementById("pregunta").innerHTML = "";
+    document.getElementById("opciones").innerHTML = "";
+    document.getElementById("resultado").innerText = "";
+    document.getElementById("mensajeFinal").innerHTML = "";
+
+    cartasSeleccionadas.forEach((carta, index) => {
+      const div = document.createElement("div");
+      div.className = "carta";
+      div.style.top = `${index * 2}px`;
+      div.style.left = `${index * 2}px`;
+      div.style.zIndex = cartasSeleccionadas.length - index;
+      document.getElementById("mazo").appendChild(div);
+    });
+
+    const cartasDOM = document.querySelectorAll(".carta");
+    cartasDOM.forEach((carta, i) => {
+      setTimeout(() => {
+        carta.style.transform = `rotate(${Math.random() * 20 - 10}deg) translateY(${Math.random() * 10}px)`;
+      }, i * 100);
+    });
+
+    actualizarContador();
+    mostrarPregunta(cartasSeleccionadas[preguntaActual]);
+  }
+
+  function mostrarPregunta(carta) {
+    document.getElementById("revelada").innerHTML = `
+      <img src="${carta.imagen}" alt="Ángulo" width="200">
+    `;
+    document.getElementById("pregunta").innerHTML = `
+      <h3>¿Qué tipo de ángulo es este?</h3>
+    `;
+
+    const opciones = [
+      { texto: "Agudo", icono: "🔺" },
+      { texto: "Obtuso", icono: "📐" },
+      { texto: "Recto", icono: "➖" },
+      { texto: "Llano", icono: "➖➖" }
+    ];
+
+    const contenedor = document.getElementById("opciones");
+    contenedor.innerHTML = "";
+    opciones.forEach(opcion => {
+      const btn = document.createElement("button");
+      btn.innerText = `${opcion.icono} ${opcion.texto}`;
+      btn.onclick = () => verificarRespuesta(opcion.texto, carta.tipo);
+      contenedor.appendChild(btn);
+    });
+  }
+
+  function verificarRespuesta(seleccion, correcta) {
+    if (seleccion === correcta) {
+      aciertos++;
+      document.getElementById("resultado").innerText = "✅ ¡Correcto!";
+    } else {
+      errores++;
+            document.getElementById("resultado").innerText = `❌ Incorrecto. La respuesta correcta es: ${correcta}`;
+    }
+
+    preguntaActual++;
+    actualizarContador();
+
+    if (preguntaActual < cartasSeleccionadas.length) {
+      setTimeout(() => {
+        document.getElementById("resultado").innerText = "";
+        mostrarPregunta(cartasSeleccionadas[preguntaActual]);
+      }, 1000);
+    } else {
+      mostrarMensajeFinal();
+    }
+  }
+
+  function actualizarContador() {
+    document.getElementById("contador").innerText =
+      `Pregunta ${preguntaActual} de 10 — Aciertos: ${aciertos} — Errores: ${errores}`;
+  }
+
+  function mostrarMensajeFinal() {
+    document.getElementById("pregunta").innerHTML = "";
+    document.getElementById("opciones").innerHTML = "";
+    document.getElementById("revelada").innerHTML = "";
+
+    let mensaje = "";
+    if (aciertos === 10) {
+      mensaje = "🎉 ¡Perfecto! ¡Eres un maestro de los ángulos!";
+      lanzarConfeti();
+    } else if (aciertos >= 8) {
+      mensaje = "👏 ¡Muy bien! Casi perfecto.";
+    } else if (aciertos >= 5) {
+      mensaje = "👍 Buen trabajo, sigue practicando.";
+    } else {
+      mensaje = "💡 ¡Ánimo! Con práctica mejorarás.";
+    }
+
+    document.getElementById("mensajeFinal").innerHTML = `
+      <div class="mensaje-final">${mensaje}</div>
+      <button class="jugar-nuevo" onclick="barajarCartas()">Jugar de nuevo</button>
+      <button class="jugar-nuevo" onclick="iniciarNivel2()">Ir al Nivel 2</button>
+    `;
+  }
+
+  function lanzarConfeti() {
+    const canvas = document.getElementById("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const piezas = [];
+    for (let i = 0; i < 100; i++) {
+      piezas.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 6 + 4,
+        d: Math.random() * 10 + 5,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+        tilt: Math.random() * 10 - 10
+      });
+    }
+
+    function dibujar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      piezas.forEach(p => {
+        ctx.beginPath();
+        ctx.fillStyle = p.color;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      mover();
+    }
+
+    function mover() {
+      piezas.forEach(p => {
+        p.y += p.d * 0.5;
+        p.x += Math.sin(p.tilt) * 0.5;
+        p.tilt += 0.1;
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
+      });
+    }
+
+    let duracion = 3000;
+    let inicio = Date.now();
+    const animacion = setInterval(() => {
+      dibujar();
+      if (Date.now() - inicio > duracion) {
+        clearInterval(animacion);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }, 30);
+  }
+
+  barajarCartas(); // Inicializa el juego al cargar
+</script>
+
+</body>
+</html>
+
+
