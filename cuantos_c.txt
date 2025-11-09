@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Cuántos ángulos hay?</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #fefae0;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      color: #333;
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .question {
+      margin: 15px 0;
+      font-size: 1.2em;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px auto;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      display: block;
+    }
+    button {
+      margin: 10px auto;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: block;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    #reiniciar {
+      display: none;
+      background-color: #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <h1>¿Cuántos ángulos hay en la imagen?</h1>
+  <img src="img/casa.png" alt="Escenario con ángulos">
+
+  <div class="question" id="pregunta"></div>
+  <input type="number" id="respuesta">
+  <button onclick="verificar()">Verificar</button>
+  <button id="reiniciar" onclick="reiniciarJuego()">Volver a jugar</button>
+  <div id="result"></div>
+
+  <script>
+    const rondas = [
+      { tipo: "rectos", correctos: 3 },
+      { tipo: "agudos", correctos: 3 },
+      { tipo: "obtusos", correctos: 2 },
+      { tipo: "llanos", correctos: 1 }
+    ];
+
+    let rondaActual = 0;
+
+    function lanzarConfeti() {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+
+    function mostrarRonda() {
+      const ronda = rondas[rondaActual];
+      document.getElementById("pregunta").textContent = `Ángulos ${ronda.tipo}:`;
+      document.getElementById("respuesta").value = "";
+      document.getElementById("result").textContent = "";
+    }
+
+    function verificar() {
+      const entrada = parseInt(document.getElementById("respuesta").value);
+      const ronda = rondas[rondaActual];
+
+      if (entrada === ronda.correctos) {
+        document.getElementById("result").textContent = "✅ ¡Correcto!";
+        lanzarConfeti();
+      } else {
+        document.getElementById("result").textContent = `Incorrecto. Hay ${ronda.correctos} ángulos ${ronda.tipo}.`;
+      }
+
+      rondaActual++;
+      if (rondaActual < rondas.length) {
+        setTimeout(mostrarRonda, 2000);
+      } else {
+        setTimeout(() => {
+          document.getElementById("pregunta").textContent = "🎉 ¡Juego terminado!";
+          document.getElementById("respuesta").style.display = "none";
+          document.querySelector("button").style.display = "none";
+          document.getElementById("reiniciar").style.display = "inline-block";
+        }, 2500);
+      }
+    }
+
+    function reiniciarJuego() {
+      rondaActual = 0;
+      document.getElementById("respuesta").style.display = "inline-block";
+      document.querySelector("button").style.display = "inline-block";
+      document.getElementById("reiniciar").style.display = "none";
+      mostrarRonda();
+    }
+
+    mostrarRonda();
+  </script>
+</body>
+</html>
+
